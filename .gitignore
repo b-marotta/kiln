@@ -1,0 +1,47 @@
+# Build output (build.sh / swiftc)
+.build/
+*.o
+*.dylib
+*.dSYM/
+
+# Compiled Core ML (sources keep .mlpackage)
+*.mlmodelc/
+
+# Xcode / SwiftPM (if used later)
+DerivedData/
+*.xcuserdata/
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
+.swiftpm/
+Packages/
+Package.resolved
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Editor / IDE
+.idea/
+*.swp
+*~
+*.bak
+
+# Secrets / local env
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.key
+Secrets/

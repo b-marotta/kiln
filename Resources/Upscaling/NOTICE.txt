@@ -1,0 +1,13 @@
+Kiln image upscaling models
+
+PiperSR by Ben Racicot / ModelPiper — https://modelpiper.com
+https://github.com/ModelPiper/PiperSR
+Model weights: CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/
+Revision: 8a57d04190768bcf924ae88b59f82558f90b9a1d
+Weights unmodified; compiled to .mlmodelc for distribution.
+Only model assets are included; no PiperSR AGPL source is distributed.
+
+Source asset SHA-256 checksums:
+df7fcedd18b75f7e87a9d782e65efb00a946947f30a877ee5e6ba6e23d263a9f  PiperSR_2x.mlpackage/Data/com.apple.CoreML/model.mlmodel
+470924d59790b031487863da4f0df0a394c05cb959455300e78484754841e060  PiperSR_2x.mlpackage/Data/com.apple.CoreML/weights/weight.bin
+bb4d698b552f273ef0b2b3a1898f45c3be34ea60a6315c4f0d77ca8989746222  PiperSR_2x.mlpackage/Manifest.json
