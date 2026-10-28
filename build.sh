@@ -146,11 +146,16 @@ quit_if_running() {
 }
 
 # Fixed install path — always launch this copy after rebuilds.
-STABLE_APP="${HOME}/Applications/Kiln.app"
-mkdir -p "${HOME}/Applications"
+STABLE_APP="/Applications/Kiln.app"
 quit_if_running Kiln
-rm -rf "$STABLE_APP"
-cp -R "$APP" "$STABLE_APP"
+if [[ -w /Applications ]]; then
+  rm -rf "$STABLE_APP"
+  cp -R "$APP" "$STABLE_APP"
+else
+  sudo rm -rf "$STABLE_APP"
+  sudo cp -R "$APP" "$STABLE_APP"
+  sudo chown -R "$(id -u):$(id -g)" "$STABLE_APP"
+fi
 # Re-sign after copy (copy invalidates seal).
 sign_app "$STABLE_APP" >/dev/null || true
 

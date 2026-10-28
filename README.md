@@ -1,75 +1,133 @@
 # Kiln
 
-Independent macOS menu-bar file converter (clean-room). Capabilities tracked against `../REA-REPORT-Tangerine.md` §8 / `../PROGRESS.md`. Not a derivative of Tangerine’s code or assets.
+**Kiln** is a macOS menu bar utility for converting and editing files without opening a full app window. Drag a file, hold **Shift**, and work from a glass shelf at the top of the screen.
 
-## Features (v0.3)
+Outputs are written next to the original. Originals are never overwritten.
 
-- Menu-bar agent (`LSUIElement`) + top-of-screen Liquid Glass file shelf
-- Drag a file and press Shift (or hold Shift before dragging) to reveal the drop zone
-- Drop to see a Quick Look thumbnail, name, extension and size; select Conversioni / Azioni / Tool, then click an action bubble
-- The shelf stays open after the drop; drop another file to replace the selection, or close with Esc / ×
-- Command and Control no longer open the radial menu
-- Images: PNG / JPEG / HEIC / WebP / TIFF / BMP / AVIF / SVG→raster / PDF / strip metadata
-- Image actions (one static raster image): interactive crop (free / 1:1 / 16:9 / 4:3 / 9:16), compression with quality / pixel scale / actual output size, brightness / contrast / saturation / exposure / temperature / sharpening, local Italian/English OCR with editable text / copy / TXT export, and offline PiperSR AI upscaling with 2× / 3× / 4× / 5× factors
-- Image editor exports a new adjacent PNG or JPEG (white background for JPEG); originals stay unchanged. Each action works from the original. Compression exports only when smaller. GIF, SVG and multipage images are excluded from editing.
-- Video via `ffmpeg`: MP4 / MOV / MKV / AVI / WMV / GIF (+ audio extract)
-- Audio via `ffmpeg`: MP3 / M4A / WAV / FLAC / OGG / OPUS / AIFF / WMA
-- PDF: images→PDF, PDF→PNG/JPEG/TXT, PDF→XLSX (best-effort)
-- Archives: ZIP / TAR / GZIP pack + extract; RAR extract if `unrar`/`bsdtar` available
-- Subtitles: SRT↔VTT, →TXT
-- Text docs: TXT / MD / RTF → PDF / HTML / TXT
-- Spreadsheets: CSV / TSV / XLSX / ODS ↔ + PDF (native Swift; no bundled POI)
-- File actions: Reveal, Copy path, AirDrop, Terminal, Float
+## Requirements
 
-## Source organization
+- macOS 13 or later
+- Xcode Command Line Tools (`xcode-select --install`)
+- Optional host tools for some formats (see [Optional tools](#optional-tools))
 
-UI code lives in `Sources/App`, grouped by feature:
+## Install
 
-- `Editors/PDF`: PDF editor controller, signature placement, signature capture and supporting views.
-- `Editors/Audio`: audio editor controller, waveform and supporting controls.
-- `Editors/Image`: image editor controller, crop preview and supporting controls.
-- `Shelf`: drop overlay, file shelf, previews, action buttons and section selector.
-- `RadialMenu`: panel lifecycle, radial layout, hub, petals and unsupported-file banner.
-
-Controllers coordinate their feature; dedicated view files own drawing and input handling.
-Small supporting controls stay grouped by feature. Shared glass controls remain in
-`Sources/App/LiquidGlass.swift`. Conversion and editing operations remain in `Sources/Core`.
-
-`build.sh` lists source files explicitly: update its `SOURCES` array when adding or moving Swift files.
-
-## Build / run
+Build and install to `/Applications`:
 
 ```bash
 ./build.sh
-open ~/Applications/Kiln.app
 ```
 
-Host tools (optional): `ffmpeg`, `ffprobe`, `cwebp` (`brew install ffmpeg webp`), `exiftool`, `unrar` (RAR extract).
+The script compiles the app, signs it, installs `/Applications/Kiln.app`, and launches it.
 
-## Image upscaling
+Build only (no install, no launch):
 
-Choose **Azioni → Ingrandisci**, then **2×**, **3×**, **4×** or **5×**.
-PiperSR is natively 2×: 2× uses one inference pass, 3×/4× use two, and 5× uses three.
-For 3× and 5×, the final overlapping output tiles are resized with Lanczos directly to the
-requested dimensions, without allocating a full 4×/8× intermediate for the last pass.
-Each choice processes the original image. Hold the eye button to compare with the original;
-press/drag on the preview for the detail lens. Export writes a new adjacent PNG named
-`*-2x-pipersr.png`, `*-3x-pipersr.png`, `*-4x-pipersr.png` or `*-5x-pipersr.png`,
-preserving alpha and leaving the original unchanged.
-The editor shows processing progress and elapsed time; changing factor/action cancels the previous job.
-Output is limited to 40 MP to bound full-image memory (input limits depend on the chosen factor).
-Processing uses overlapping reflected tiles, with RGB inference and separately interpolated alpha.
-All inference is local. Repeated passes can amplify artifacts; larger output does not guarantee more detail.
+```bash
+KILN_BUILD_ONLY=1 ./build.sh
+```
 
-Only PiperSR's model package is included in `Resources/Upscaling`; `build.sh` compiles it with Core ML
-and removes obsolete Real-ESRGAN resources from previous builds.
-No Python runtime or first-use network download is required. Attribution, source revision and hashes
-are recorded in `Resources/Upscaling/NOTICE.txt`, alongside the model license.
+## Usage
 
-For a build without installation or launch: `KILN_BUILD_ONLY=1 ./build.sh`.
-Core ML compilation/inference must be allowed access to its normal temporary and cache folders.
+1. Start a drag from Finder (or another app that provides file URLs).
+2. Hold **Shift** (before or during the drag) to show the shelf.
+3. Drop the file. The shelf shows a Quick Look preview plus name, type, and size.
+4. Choose a section and an action:
+   - **Conversioni** — convert to another format
+   - **Azioni** — edit in place (image, PDF, audio, documents)
+   - **Tool** — pack/extract archives, strip metadata
+5. Drop another file to replace the selection, or close with **Esc** / **×**.
 
-Focused inference verification (from `Kiln`):
+Recent jobs appear in the menu bar menu. Share from the file card with the system share sheet.
+
+## Features
+
+### Convert
+
+| Kind | Formats |
+|------|---------|
+| Images | PNG, JPEG, HEIC, WebP, TIFF, BMP, AVIF, SVG→raster, PDF, multi-image→PDF |
+| Video | MP4, MOV, MKV, WEBM, AVI, WMV, GIF (+ extract audio) |
+| Audio | MP3, M4A, WAV, FLAC, OGG, OPUS, AIFF, WMA (+ audio→MP4) |
+| PDF | → PNG, JPEG, TXT, XLSX (best-effort) |
+| Subtitles | SRT ↔ VTT, SRT/VTT → TXT |
+| Documents | TXT / MD / RTF → PDF, HTML, TXT; HTML / DOC / DOCX → PDF |
+| Spreadsheets | CSV, TSV, XLSX, ODS ↔ and → PDF |
+
+Legacy `.xls` is detected but not readable.
+
+### Edit — images
+
+Available for a single static raster image (not GIF, SVG, or multipage):
+
+- **Crop** — free, 1:1, 16:9, 4:3, 9:16
+- **Compress** — quality, pixel scale, live output size; exports only when smaller
+- **Adjust** — brightness, contrast, saturation, exposure, temperature, sharpen
+- **OCR** — Italian / English, editable text, copy, TXT export
+- **Upscale** — offline PiperSR AI upscaling at 2× / 3× / 4× / 5×
+
+Exports a new adjacent PNG, JPEG, HEIC, or WebP when the encoder is available. Each action starts from the original file.
+
+### Edit — PDF & documents
+
+- Merge, split, reorder (move / rotate / duplicate / delete)
+- Compress (PDF), OCR → TXT, place a drawn or imported signature
+- Other documents (TXT, MD, RTF, HTML, DOC, DOCX): merge, split, reorder, sign
+
+### Edit — audio
+
+Opens automatically for a single audio drop:
+
+- Trim, pitch, speed (optional preserve pitch), reverse, volume envelope
+- Waveform preview (Space to play)
+- Export WAV, MP3, M4A, FLAC, or AIFF
+
+### Tools
+
+- Strip metadata from images and PDFs
+- Pack ZIP / TAR / GZIP
+- Extract ZIP / TAR / GZIP / RAR (when `unrar` or `bsdtar` is present)
+
+## Optional tools
+
+Kiln uses system frameworks where it can. Install these for broader coverage:
+
+```bash
+brew install ffmpeg webp
+```
+
+| Tool | Used for |
+|------|----------|
+| `ffmpeg` / `ffprobe` | Video and audio conversion and editing |
+| `cwebp` | WebP encode |
+| `exiftool` | Metadata stripping (when available) |
+| `unrar` | RAR extract |
+
+## AI upscaling
+
+**Azioni → Ingrandisci** runs [PiperSR](https://github.com/ModelPiper/PiperSR) locally through Core ML. No network call and no Python runtime.
+
+- Native model scale is 2×; higher factors chain passes
+- Alpha is preserved; output is capped at 40 megapixels
+- Exports as `*-2x-pipersr.png` (and equivalents for 3×–5×)
+- Model package, license, and checksums: `Resources/Upscaling/`
+
+## Project layout
+
+```
+Sources/
+  App/          Menu bar, shelf UI, editors (image / PDF / audio)
+  Core/         Conversion, editing, and task plumbing
+  Tools/        Smoke tests
+Scripts/        Build helpers (Core ML compile, codesign)
+Resources/      App icon, sounds, upscaling models
+build.sh        Build, sign, install, launch
+```
+
+When you add or move Swift sources, update the `SOURCES` array in `build.sh`.
+
+## Development
+
+Smoke-test upscaling against a built app bundle:
 
 ```bash
 swiftc -O -parse-as-library -module-cache-path .build/ModuleCache \
@@ -81,8 +139,8 @@ swiftc -O -parse-as-library -module-cache-path .build/ModuleCache \
 .build/smoke_upscale .build/Kiln.app/Contents/Resources/Upscaling
 ```
 
-## Non-goals
+Core ML needs normal access to its temporary and cache directories.
 
-- Tangerine branding / code / bundled Tools
-- Byte-identical output
-- Full DOCX/Pages/PPTX/EPUB (deferred; see `OfficeBridge`)
+## Acknowledgments
+
+Image upscaling uses [PiperSR](https://github.com/ModelPiper/PiperSR) by Ben Racicot / ModelPiper. Model weights are CC BY 4.0; details and checksums are in `Resources/Upscaling/NOTICE.txt`.
